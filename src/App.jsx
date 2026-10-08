@@ -1,0 +1,479 @@
+import { useMemo, useState } from 'react';
+
+const customerTypes = ['Personal', 'Business/Corporate'];
+
+const productCategories = [
+  'Personal Savings',
+  'Personal ISA',
+  'Business Savings',
+  'Business Current Account',
+  "Solicitor's Client Account",
+  'FX & Payments',
+];
+
+const accountTypeOptions = [
+  'Online Easy Access',
+  'Notice Saver (35 day)',
+  'Notice Saver (95 day)',
+  'Notice Saver (120 day)',
+  'Fixed Rate Bond',
+  'Online ISA',
+  'Fixed Cash ISA',
+  'Variable Cash ISA',
+  'Business Easy Access',
+  'Business Notice Saver',
+  'Business Fixed Rate',
+  'Business Current Account',
+  'Solicitor Client Account',
+  'FX Account',
+  'Payments Account',
+  '1 Year Fixed Rate Bond',
+  '2 Year Fixed Rate Bond',
+  '3 Year Fixed Rate Bond',
+  '5 Year Fixed Rate Bond',
+];
+
+const channelOptions = ['Online Banking', 'Mobile App'];
+const marketingOptions = ['Opt in', 'Opt out'];
+const taxStatusOptions = ['UK only', 'US Person', 'Foreign Tax Resident', 'Dual Resident'];
+
+const defaultDraft = {
+  sectionName: 'Cynergy customer campaign',
+  description: 'Targeting customers for relevant savings and banking products.',
+  priority: 50,
+  startDate: '',
+  endDate: '',
+  customerTypes: ['Personal'],
+  productCategories: ['Personal Savings'],
+  accountTypes: ['Online Easy Access'],
+  channels: ['Online Banking'],
+  marketingConsent: ['Opt in'],
+  taxStatus: ['UK only'],
+  headline: '',
+  ctaText: '',
+  ctaUrl: 'https://www.cynergybank.co.uk/online-banking',
+  mediaFile: null,
+  mediaPreview: '',
+  mediaType: 'image',
+};
+
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
+}
+
+function MultiSelect({ label, options, selected, onChange, placeholder = 'Select options' }) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+
+  const filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const toggleOption = (option) => {
+    if (selected.includes(option)) {
+      onChange(selected.filter((item) => item !== option));
+    } else {
+      onChange([...selected, option]);
+    }
+  };
+
+  return (
+    <div className="field-block">
+      <label className="field-label">{label}</label>
+      <div className="multiselect-wrap">
+        <button
+          type="button"
+          className="multiselect-trigger"
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          <span>
+            {selected.length > 0 ? `${selected.length} selected` : placeholder}
+          </span>
+          <span className="chevron">▾</span>
+        </button>
+
+        {open && (
+          <div className="multiselect-panel">
+            <div className="multiselect-actions">
+              <button type="button" onClick={() => onChange(options)} className="mini-link">
+                Select all
+              </button>
+              <button type="button" onClick={() => onChange([])} className="mini-link">
+                Clear
+              </button>
+            </div>
+
+            <input
+              type="text"
+              className="search-input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search..."
+            />
+
+            <div className="option-list">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((option) => (
+                  <label key={option} className="option-item">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(option)}
+                      onChange={() => toggleOption(option)}
+                    />
+                    <span>{option}</span>
+                  </label>
+                ))
+              ) : (
+                <div className="empty-state">No matching results</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [form, setForm] = useState(defaultDraft);
+  const [status, setStatus] = useState('');
+
+  const liveSummary = useMemo(() => {
+    const sections = [
+      form.customerTypes.length ? `Customer type: ${form.customerTypes.join(', ')}` : null,
+      form.productCategories.length ? `Product category: ${form.productCategories.join(', ')}` : null,
+      form.accountTypes.length ? `Account types: ${form.accountTypes.join(', ')}` : null,
+      form.channels.length ? `Channels: ${form.channels.join(', ')}` : null,
+      form.marketingConsent.length ? `Marketing: ${form.marketingConsent.join(', ')}` : null,
+      form.taxStatus.length ? `Tax status: ${form.taxStatus.join(', ')}` : null,
+    ].filter(Boolean);
+
+    return sections.length ? sections.join(' • ') : 'Choose one or more criteria to build the audience segment.';
+  }, [form]);
+
+  const updateField = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      setStatus('File must be 50MB or smaller.');
+      return;
+    }
+
+    const isVideo = file.type.startsWith('video/');
+    const preview = isVideo ? '' : URL.createObjectURL(file);
+
+    setForm((prev) => ({
+      ...prev,
+      mediaFile: file,
+      mediaPreview: preview,
+      mediaType: isVideo ? 'video' : 'image',
+    }));
+    setStatus('');
+  };
+
+  const removeMedia = () => {
+    setForm((prev) => ({ ...prev, mediaFile: null, mediaPreview: '', mediaType: 'image' }));
+  };
+
+  const saveDraft = () => setStatus('Draft saved successfully.');
+  const saveTemplate = () => setStatus('Template saved successfully.');
+
+  return (
+    <div className="page-shell">
+      <header className="topbar">
+        <div className="brand-block">
+          <div className="brand-mark">C</div>
+          <div>
+            <div className="eyebrow">Cynergy Bank</div>
+            <div className="brand-title">Segmentation Template</div>
+          </div>
+        </div>
+      </header>
+
+      <main className="form-layout">
+        <section className="card">
+          <div className="section-header">
+            <div className="section-index">1</div>
+            <div>
+              <h2>Template Identity</h2>
+            </div>
+          </div>
+
+          <div className="grid-two">
+            <div className="field-block">
+              <label htmlFor="sectionName" className="field-label">
+                Template name
+              </label>
+              <input
+                id="sectionName"
+                className="text-input"
+                value={form.sectionName}
+                onChange={(event) => updateField('sectionName', event.target.value)}
+              />
+            </div>
+
+            <div className="field-block">
+              <label className="field-label">Priority</label>
+              <div className="priority-wrap">
+                <span className="priority-scale-label">Low</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={form.priority}
+                  onChange={(event) => updateField('priority', Number(event.target.value))}
+                  className="priority-range"
+                />
+                <div className="priority-value">{form.priority}</div>
+                <span className="priority-scale-label">High</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="field-block">
+            <label htmlFor="description" className="field-label">
+              Description
+            </label>
+            <textarea
+              id="description"
+              className="text-area"
+              value={form.description}
+              onChange={(event) => updateField('description', event.target.value)}
+              rows={4}
+            />
+          </div>
+
+          <div className="grid-two">
+            <div className="field-block">
+              <label htmlFor="startDate" className="field-label">
+                Effective from
+              </label>
+              <input
+                id="startDate"
+                type="date"
+                className="text-input"
+                value={form.startDate}
+                onChange={(event) => updateField('startDate', event.target.value)}
+              />
+            </div>
+
+            <div className="field-block">
+              <label htmlFor="endDate" className="field-label">
+                Effective to
+              </label>
+              <input
+                id="endDate"
+                type="date"
+                className="text-input"
+                value={form.endDate}
+                onChange={(event) => updateField('endDate', event.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="card">
+          <div className="section-header">
+            <div className="section-index">2</div>
+            <div>
+              <h2>Customer Type</h2>
+            </div>
+          </div>
+
+          <MultiSelect
+            label="Customer type"
+            options={customerTypes}
+            selected={form.customerTypes}
+            onChange={(value) => updateField('customerTypes', value)}
+            placeholder="Choose customer types"
+          />
+        </section>
+
+        <section className="card">
+          <div className="section-header">
+            <div className="section-index">3</div>
+            <div>
+              <h2>Product Segmentation</h2>
+            </div>
+          </div>
+
+          <MultiSelect
+            label="Product category"
+            options={productCategories}
+            selected={form.productCategories}
+            onChange={(value) => updateField('productCategories', value)}
+            placeholder="Select categories"
+          />
+
+          <MultiSelect
+            label="Account type"
+            options={accountTypeOptions}
+            selected={form.accountTypes}
+            onChange={(value) => updateField('accountTypes', value)}
+            placeholder="Select account types"
+          />
+        </section>
+
+        <section className="card">
+          <div className="section-header">
+            <div className="section-index">4</div>
+            <div>
+              <h2>Channel</h2>
+            </div>
+          </div>
+
+          <MultiSelect
+            label="Channel"
+            options={channelOptions}
+            selected={form.channels}
+            onChange={(value) => updateField('channels', value)}
+            placeholder="Select channels"
+          />
+        </section>
+
+        <section className="card">
+          <div className="section-header">
+            <div className="section-index">5</div>
+            <div>
+              <h2>Tax & Marketing</h2>
+            </div>
+          </div>
+
+          <MultiSelect
+            label="Tax status"
+            options={taxStatusOptions}
+            selected={form.taxStatus}
+            onChange={(value) => updateField('taxStatus', value)}
+            placeholder="Select tax status"
+          />
+
+          <MultiSelect
+            label="Marketing consent"
+            options={marketingOptions}
+            selected={form.marketingConsent}
+            onChange={(value) => updateField('marketingConsent', value)}
+            placeholder="Select consent"
+          />
+        </section>
+
+        <section className="card">
+          <div className="section-header">
+            <div className="section-index">6</div>
+            <div>
+              <h2>Content</h2>
+            </div>
+          </div>
+
+          <div className="field-block">
+            <label htmlFor="headline" className="field-label">
+              Headline
+            </label>
+            <input
+              id="headline"
+              className="text-input"
+              value={form.headline}
+              onChange={(event) => updateField('headline', event.target.value)}
+              placeholder="Create a clear customer message"
+            />
+          </div>
+
+          <div className="field-block">
+            <label className="field-label">Image / Video</label>
+            <label className="upload-zone">
+              <input type="file" accept="image/*,video/*" onChange={handleFileUpload} />
+              <span className="upload-icon">＋</span>
+              <span>
+                Drag and drop or browse
+                <small>JPG, PNG, GIF, WebP, MP4, MOV • up to 50MB</small>
+              </span>
+            </label>
+
+            {form.mediaFile && (
+              <div className="media-preview">
+                {form.mediaType === 'image' ? (
+                  <img src={form.mediaPreview} alt="Upload preview" />
+                ) : (
+                  <div className="video-card">
+                    <span className="video-pill">Video</span>
+                    <div>
+                      <strong>{form.mediaFile.name}</strong>
+                      <small>{formatBytes(form.mediaFile.size)}</small>
+                    </div>
+                  </div>
+                )}
+                <button type="button" className="remove-file" onClick={removeMedia}>
+                  Remove
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="field-block">
+            <label htmlFor="ctaText" className="field-label">
+              CTA button text
+            </label>
+            <input
+              id="ctaText"
+              className="text-input"
+              value={form.ctaText}
+              onChange={(event) => updateField('ctaText', event.target.value)}
+              placeholder="e.g. Open account"
+            />
+          </div>
+
+          <div className="field-block">
+            <label htmlFor="ctaUrl" className="field-label">
+              CTA link URL
+            </label>
+            <input
+              id="ctaUrl"
+              className="text-input"
+              value={form.ctaUrl}
+              onChange={(event) => updateField('ctaUrl', event.target.value)}
+              placeholder="https://www.cynergybank.co.uk/online-banking"
+            />
+          </div>
+
+          {(form.ctaText || form.ctaUrl) && (
+            <div className="cta-preview-wrap">
+              <div className="cta-preview-label">Live CTA preview</div>
+              <a
+                href={form.ctaUrl || '#'}
+                className="cta-preview"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {form.ctaText || 'Learn more'}
+              </a>
+            </div>
+          )}
+        </section>
+
+        <section className="summary-bar">
+          <div className="summary-label">Live criteria summary</div>
+          <div className="summary-text">{liveSummary}</div>
+        </section>
+
+        <div className="action-row">
+          <button type="button" className="secondary-btn" onClick={saveDraft}>
+            Save Draft
+          </button>
+          <button type="button" className="primary-btn" onClick={saveTemplate}>
+            Save Template
+          </button>
+        </div>
+
+        {status && <div className="status-banner">{status}</div>}
+      </main>
+    </div>
+  );
+}
